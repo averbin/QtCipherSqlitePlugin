@@ -24,7 +24,7 @@ set(SOURCES
     sqlitecipher.cpp
 )
 
-add_library(sqlitecipher MODULE ${INCLUDES} ${SOURCES} SqliteCipherDriverPlugin.json)
+add_library(sqlitecipher SHARED ${INCLUDES} ${SOURCES} SqliteCipherDriverPlugin.json)
 
 target_link_libraries(sqlitecipher Qt5::Core Qt5::Sql)
 
@@ -51,6 +51,7 @@ get_target_property(QtSql_location Qt5::Sql LOCATION)
 
 target_compile_features(sqlitecipher PUBLIC cxx_std_14)
 
+qt5_use_modules(sqlitecipher Core Sql)
 #parameters from pri file.
 
 if(WIN32)
@@ -59,10 +60,16 @@ if(WIN32)
 	endif()
     add_definitions(
 	-DSQLITE_OS_WINRT
-	-DSQLITE_CORE
 	-DSQLITE_HAS_CODEC
 	-DCODEC_TYPE
 	-DCODEC_TYPE_UNKNOWN
+	
+	-D_WINDOWS
+	-DUNICODE
+	-D_UNICODE
+	-D_ENABLE_EXTENDED_ALIGNED_STORAGE
+	-DWIN64
+	-DWIN32
 	)
 endif()
 
@@ -70,7 +77,7 @@ add_definitions(
 	-DCHECK_SQLITE_KEY
     -DSQLITE_OMIT_LOAD_EXTENSION 
 	-DSQLITE_OMIT_COMPLETE
-	-DSQLITE_ENABLE_RTREE
+
 )
 
 set(THREADSAFE 1)
@@ -78,6 +85,7 @@ set(SQLITE_HAS_CODEC 1)
 set(MAX_ATTACHED 10)
 set(TEMP_STORE 2)
 set(SQLITE_WIN32_FILEMAPPING_API 1)
+set(CODEC_TYPE_CHACHA20 3)
 
 add_definitions(
 	-DNDEBUG
@@ -97,11 +105,12 @@ add_definitions(
     -DSQLITE_ENABLE_EXPLAIN_COMMENTS
     -DSQLITE_ENABLE_COLUMN_METADATA
     -DSQLITE_HAS_CODEC=${SQLITE_HAS_CODEC}
-    -DCODEC_TYPE
+    -DCODEC_TYPE=${CODEC_TYPE_CHACHA20}
     -DSQLITE_SECURE_DELETE
     -DSQLITE_ENABLE_FTS4
     -DSQLITE_ENABLE_FTS5
     -DSQLITE_ENABLE_JSON1
+	-DSQLITE_ENABLE_RTREE
     -DSQLITE_CORE
     -DSQLITE_ENABLE_EXTFUNC
     -DSQLITE_ENABLE_CSV
@@ -112,9 +121,18 @@ add_definitions(
     -DSQLITE_TEMP_STORE=${TEMP_STORE}
     -DSQLITE_USE_URI
     -DSQLITE_USER_AUTHENTICATION
+	-DSQLITE_OMIT_LOAD_EXTENSION
 	-DDISABLE_LIBRARY_FEATURES
+	-DQT_DEPRECATED_WARNINGS
+	-DQT_NO_NARROWING_CONVERSIONS_IN_CONNECT
+	-DQT_NO_EXCEPTIONS
 	-D_QNX_SOURCE
 	-DSQLITE_WIN32_FILEMAPPING_API=${SQLITE_WIN32_FILEMAPPING_API}
+	${QT_DEFINITIONS}
+	-DQT_PLUGIN
+	-DQT_SHARED
+	-DQT_NO_DEBUG
+	-DCOMPILE_DEFINITIONS
     )
 
 add_subdirectory(sqlite3)
