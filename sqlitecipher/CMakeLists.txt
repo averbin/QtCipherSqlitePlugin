@@ -1,15 +1,16 @@
 cmake_minimum_required(VERSION 3.3 FATAL_ERROR)
 project( sqlitecipher )
 
-set(CMAKE_CXX_STANDARD 11) # This is equal to QMAKE_CXX_FLAGS += -std=c++0x
+set(CMAKE_CXX_STANDARD 14)
 
 add_definitions ( -Wall )
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(SQL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/sqlite3)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/plugins/sqldrivers/) 
+
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
-#set(CMAKE_AUTOUIC ON)
 
 find_package(Qt5 COMPONENTS Core Sql REQUIRED)
 find_program(QMAKE_EXEC qmake DOC "Complete path to the qmake executable")
@@ -52,18 +53,13 @@ get_target_property(QtSql_location Qt5::Sql LOCATION)
 target_compile_features(sqlitecipher PUBLIC cxx_std_14)
 
 qt5_use_modules(sqlitecipher Core Sql)
-#parameters from pri file.
 
 if(WIN32)
-	if(MSVC)
-		#target_compile_options(sqlitecipher PUBLIC "/Zc:__cplusplus")
-	endif()
     add_definitions(
 	-DSQLITE_OS_WINRT
 	-DSQLITE_HAS_CODEC
 	-DCODEC_TYPE
 	-DCODEC_TYPE_UNKNOWN
-	
 	-D_WINDOWS
 	-DUNICODE
 	-D_UNICODE
@@ -77,7 +73,6 @@ add_definitions(
 	-DCHECK_SQLITE_KEY
     -DSQLITE_OMIT_LOAD_EXTENSION 
 	-DSQLITE_OMIT_COMPLETE
-
 )
 
 set(THREADSAFE 1)
@@ -135,5 +130,19 @@ add_definitions(
 	-DCOMPILE_DEFINITIONS
     )
 
+if ( MSVC )
+	set(LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+    set_target_properties( sqlitecipher PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} )
+    set_target_properties( sqlitecipher PROPERTIES LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} )
+    set_target_properties( sqlitecipher PROPERTIES LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} )
+
+	set_target_properties(sqlitecipher PROPERTIES LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<$<CONFIG:Debug>:>)
+	set_target_properties(sqlitecipher PROPERTIES LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<$<CONFIG:Release>:>)
+	
+	message (STATUS "CMAKE_RUNTIME_OUTPUT_DIRECTORY : ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+	message (STATUS "LIBRARY_OUTPUT_DIRECTORY_DEBUG : ${LIBRARY_OUTPUT_DIRECTORY_DEBUG}")
+	message (STATUS "LIBRARY_OUTPUT_DIRECTORY_RELEASE : ${LIBRARY_OUTPUT_DIRECTORY_RELEASE}")
+endif ( MSVC )
+
 add_subdirectory(sqlite3)
-file(GLOB sqlitecipher "${CMAKE_CURRENT_LIST_DIR}/SqliteCipherDriverPlugin*sqldrivers.cmake")
+file(GLOB sqlitecipher "${CMAKE_CURRENT_LIST_DIR}/SqliteCipherDriverPlugin/sqldrivers.cmake")
