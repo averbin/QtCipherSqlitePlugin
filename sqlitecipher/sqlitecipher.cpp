@@ -1121,9 +1121,11 @@ bool SQLiteCipherDriver::open(const QString & db, const QString &, const QString
             }
             case CREATE_KEY:
             {
-                const int result = sqlite3_rekey(d->access, password.toUtf8().constData(), password.size());
-                if (SQLITE_OK != result) {
-                    setLastError(qMakeError(d->access, tr("Cannot create password."), QSqlError::ConnectionError, result));
+                if (SQLITE_OK != sqlite3_rekey(d->access, password.toUtf8().constData(), password.size())) {
+                    setLastError(qMakeError(d->access, tr("Cannot create password. Maybe it is encrypted?"), QSqlError::ConnectionError));
+                    setOpenError(true);
+                    setOpen(false);
+                    sqlite3_close_v2(d->access);
                     return false;
                 }
                 break;
@@ -1159,6 +1161,7 @@ bool SQLiteCipherDriver::open(const QString & db, const QString &, const QString
 
         setLastError(qMakeError(d->access, tr("Error opening database."), QSqlError::ConnectionError, openResult));
         setOpenError(true);
+        setOpen(false);
         return false;
     }
 }
@@ -1180,9 +1183,8 @@ void SQLiteCipherDriver::close()
             sqlite3_update_hook(d->access, nullptr, nullptr);
         }
 
-        const int result = sqlite3_close(d->access);
-        if (result != SQLITE_OK)
-            setLastError(qMakeError(d->access, tr("Error closing database."), QSqlError::ConnectionError, result));
+        if (sqlite3_close(d->access) != SQLITE_OK)
+            setLastError(qMakeError(d->access, tr("Error closing database"), QSqlError::ConnectionError));
         d->access = nullptr;
         setOpen(false);
         setOpenError(false);
