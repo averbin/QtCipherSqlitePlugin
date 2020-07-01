@@ -1,9 +1,7 @@
 cmake_minimum_required(VERSION 3.3 FATAL_ERROR)
-project( sqlitecipher )
 
-set(CMAKE_CXX_STANDARD 14)
-
-add_definitions ( -Wall )
+set(projectName sqlitecipher)
+project(${projectName})
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(SQL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/sqlite3)
@@ -25,9 +23,9 @@ set(SOURCES
     sqlitecipher.cpp
 )
 
-add_library(sqlitecipher SHARED ${INCLUDES} ${SOURCES} SqliteCipherDriverPlugin.json)
-
-target_link_libraries(sqlitecipher Qt5::Core Qt5::Sql)
+add_library(${projectName} SHARED ${INCLUDES} ${SOURCES} SqliteCipherDriverPlugin.json)
+target_link_libraries(${projectName} Qt5::Core Qt5::Sql)
+target_compile_options(${projectName} PRIVATE  ${COMPILE_OPTIONS})
 
 # We need this part of code to find private headers in Qt.
 foreach(module Core Sql PrintSupport)
@@ -41,18 +39,18 @@ foreach(module Core Sql PrintSupport)
             endif()
         endforeach()
     endif()
-    target_include_directories(sqlitecipher PRIVATE ${${qt5_module}_PRIVATE_INCLUDE_DIRS})
+    target_include_directories(${projectName} PRIVATE ${${qt5_module}_PRIVATE_INCLUDE_DIRS})
 endforeach()
 
 get_filename_component( HEADERS_PREFIX sqlite3 ABSOLUTE)
-target_include_directories( sqlitecipher PRIVATE . ${HEADERS_PREFIX} sqlite3)
+target_include_directories( ${projectName} PRIVATE . ${HEADERS_PREFIX} sqlite3)
 
 get_target_property(QtCore_location Qt5::Core LOCATION)
 get_target_property(QtSql_location Qt5::Sql LOCATION)
 
-target_compile_features(sqlitecipher PUBLIC cxx_std_14)
+target_compile_features(${projectName} PUBLIC cxx_std_14)
 
-qt5_use_modules(sqlitecipher Core Sql)
+qt5_use_modules(${projectName} Core Sql)
 
 if(WIN32)
 add_definitions(
@@ -129,19 +127,5 @@ add_definitions(
     -DCOMPILE_DEFINITIONS
 )
 
-if ( MSVC )
-    set(LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-    set_target_properties( sqlitecipher PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} )
-    set_target_properties( sqlitecipher PROPERTIES LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} )
-    set_target_properties( sqlitecipher PROPERTIES LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} )
-
-    set_target_properties(sqlitecipher PROPERTIES LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<$<CONFIG:Debug>:>)
-    set_target_properties(sqlitecipher PROPERTIES LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<$<CONFIG:Release>:>)
-
-    message (STATUS "CMAKE_RUNTIME_OUTPUT_DIRECTORY : ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
-    message (STATUS "LIBRARY_OUTPUT_DIRECTORY_DEBUG : ${LIBRARY_OUTPUT_DIRECTORY_DEBUG}")
-    message (STATUS "LIBRARY_OUTPUT_DIRECTORY_RELEASE : ${LIBRARY_OUTPUT_DIRECTORY_RELEASE}")
-endif ( MSVC )
-
 add_subdirectory(sqlite3)
-file(GLOB sqlitecipher "${CMAKE_CURRENT_LIST_DIR}/SqliteCipherDriverPlugin/sqldrivers.cmake")
+#file(GLOB sqlitecipher "${CMAKE_CURRENT_LIST_DIR}/SqliteCipherDriverPlugin/sqldrivers.cmake")
