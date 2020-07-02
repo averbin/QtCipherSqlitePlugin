@@ -1,11 +1,20 @@
-cmake_minimum_required(VERSION 3.3 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 
-set(projectName sqlitecipher)
-project(${projectName})
+project(libsqlitecipher VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_DEBUG_POSTFIX d)
 set(SQL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/sqlite3)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/plugins/sqldrivers/)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/plugins/sqldrivers/)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/plugins/sqldrivers/) 
+
+foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
+    string( TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG )
+    set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_BINARY_DIR}/plugins/sqldrivers/ )
+    set( CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_BINARY_DIR}/plugins/sqldrivers/ )
+    set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_BINARY_DIR}/plugins/sqldrivers/ )
+endforeach( OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -23,9 +32,9 @@ set(SOURCES
     sqlitecipher.cpp
 )
 
-add_library(${projectName} SHARED ${INCLUDES} ${SOURCES} SqliteCipherDriverPlugin.json)
-target_link_libraries(${projectName} Qt5::Core Qt5::Sql)
-target_compile_options(${projectName} PRIVATE  ${COMPILE_OPTIONS})
+add_library(sqlitecipher SHARED ${INCLUDES} ${SOURCES} SqliteCipherDriverPlugin.json)
+target_link_libraries(sqlitecipher Qt5::Core Qt5::Sql)
+target_compile_options(sqlitecipher PRIVATE  ${COMPILE_OPTIONS})
 
 # We need this part of code to find private headers in Qt.
 foreach(module Core Sql PrintSupport)
@@ -39,18 +48,25 @@ foreach(module Core Sql PrintSupport)
             endif()
         endforeach()
     endif()
-    target_include_directories(${projectName} PRIVATE ${${qt5_module}_PRIVATE_INCLUDE_DIRS})
+    target_include_directories(sqlitecipher PRIVATE ${${qt5_module}_PRIVATE_INCLUDE_DIRS})
 endforeach()
 
 get_filename_component( HEADERS_PREFIX sqlite3 ABSOLUTE)
-target_include_directories( ${projectName} PRIVATE . ${HEADERS_PREFIX} sqlite3)
+target_include_directories( sqlitecipher PRIVATE . ${HEADERS_PREFIX} sqlite3)
+target_include_directories(sqlitecipher
+    PUBLIC 
+        $<INSTALL_INTERFACE:include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/>
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/
+)
 
 get_target_property(QtCore_location Qt5::Core LOCATION)
 get_target_property(QtSql_location Qt5::Sql LOCATION)
 
-target_compile_features(${projectName} PUBLIC cxx_std_14)
+#target_compile_options(sqlitecipher PRIVATE -Werror)
 
-qt5_use_modules(${projectName} Core Sql)
+qt5_use_modules(sqlitecipher Core Sql)
 
 if(WIN32)
 add_definitions(
@@ -125,6 +141,29 @@ add_definitions(
     -DQT_SHARED
     -DQT_NO_DEBUG
     -DCOMPILE_DEFINITIONS
+)
+
+include(GNUInstallDirs)
+install(TARGETS sqlitecipher
+    EXPORT sqlitecipher-export
+    LIBRARY DESTINATION ${CMAKE_BINARY_DIR}
+    ARCHIVE DESTINATION ${CMAKE_BINARY_DIR}
+)
+
+message( STATUS "path to *.cmake : ${CMAKE_BINARY_DIR}/lib/cmake/Qt5Sql/Qt5Sql_SqliteCipherDriverPlugin")
+message( STATUS "CMAKE_RUNTIME_OUTPUT_DIRECTORY : ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/lib/cmake/Qt5Sql/Qt5Sql_SqliteCipherDriverPlugin")
+
+set(CMAKE_INSTALL_PREFIX ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}../../lib/cmake/Qt5Sql/Qt5Sql_SqliteCipherDriverPlugin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib/cmake/Qt5Sql/")
+set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}" CACHE PATH "" FORCE)
+message( STATUS "CMAKE_INSTALL_LIBDIR : " ${CMAKE_INSTALL_LIBDIR}) 
+
+install(EXPORT sqlitecipher-export
+    FILE Qt5Sql_SqliteCipherDriverPlugin.cmake
+    NAMESPACE
+    SqliteCipherDriverPlugin::
+    DESTINATION
+    ${CMAKE_BINARY_DIR}/cmake/Qt5Sql/
 )
 
 add_subdirectory(sqlite3)
